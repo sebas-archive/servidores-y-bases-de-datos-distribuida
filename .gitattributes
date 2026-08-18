@@ -1,0 +1,17 @@
+# Finales de línea estables entre Linux (desarrollo) y Windows (ejecución)
+* text=auto
+
+# Scripts de shell siempre LF (corren en hosts Linux / contenedores)
+*.sh text eol=lf
+
+# Scripts de PowerShell con CRLF (host Windows)
+*.ps1 text eol=crlf
+
+# Código y diagramas en LF
+*.py text eol=lf
+*.puml text eol=lf
+*.md text eol=lf
+
+# Binarios
+*.png binary
+*.pdf binary

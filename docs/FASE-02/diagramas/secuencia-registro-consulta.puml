@@ -1,0 +1,44 @@
+@startuml secuencia-registro-consulta
+' Flujo de registro y consulta en operación normal — Fase 2
+' Renderizar con PlantUML (plugin de VS Code o plantuml.jar)
+
+title Registro y consulta en operación normal
+
+actor "Usuario (cliente Ubuntu)" as c
+participant "Servidor 1\n(Debian, :5000)" as s1
+database "db1\n(PostgreSQL)" as d1
+participant "Servidor 2\n(Fedora, :5001)" as s2
+database "db2\n(PostgreSQL)" as d2
+
+== Registro de información ==
+
+c -> s1 : POST /api/records\n{"payload": "..."}
+s1 -> d1 : INSERT INTO records\n+ outbox (pendiente)
+d1 --> s1 : ok
+
+s1 -> s2 : REPLICATE {registro}\n(canal TCP :6000 -> :6001)
+s2 -> d2 : UPSERT por UUID\n(ON CONFLICT DO NOTHING)
+d2 --> s2 : ok
+s2 --> s1 : ACK
+s1 -> d1 : outbox: eliminar pendiente
+d1 --> s1 : ok
+
+s1 --> c : 201 {"served_by": "server1", "record": {...}}
+
+== Consulta de información ==
+
+c -> s2 : GET /api/records
+s2 -> d2 : SELECT ... ORDER BY created_at DESC
+d2 --> s2 : registros
+s2 --> c : 200 {"served_by": "server2", "records": [...]}
+
+note right of c : La consulta la atiende el\nServidor 2 con los mismos\ndatos: replicación activa-activa.
+
+== Heartbeat (cada 5 s, ambos sentidos) ==
+
+s1 -> s2 : PING (TCP)
+s2 --> s1 : PONG {server_id, record_count}
+s2 -> s1 : PING (TCP)
+s1 --> s2 : PONG {server_id, record_count}
+
+@enduml

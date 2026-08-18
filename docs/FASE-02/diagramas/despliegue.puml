@@ -1,0 +1,35 @@
+@startuml despliegue
+' Arquitectura de despliegue — Fase 2 (direcciones IP y puertos definitivos)
+' Renderizar con PlantUML (plugin de VS Code o plantuml.jar)
+
+title Arquitectura de despliegue — Fase 2
+
+node "Anfitrión (Windows + Docker Desktop)" {
+  frame "Red interna «sdnet» 172.28.0.0/16" {
+
+    node "Cliente (Ubuntu 22.04)\n172.28.0.30\nconsume las API REST\nhistorial local SQLite" as client
+
+    node "Servidor 1 (Debian)\n172.28.0.21\nAPI REST :5000\ncanal TCP :6000" as s1
+    database "db1 (PostgreSQL 16)\n172.28.0.11\n:5432 (interno)" as db1
+
+    node "Servidor 2 (Fedora)\n172.28.0.22\nAPI REST :5001\ncanal TCP :6001" as s2
+    database "db2 (PostgreSQL 16)\n172.28.0.12\n:5432 (interno)" as db2
+  }
+}
+
+' Cliente -> servidores: REST/HTTP
+client -right-> s1 : REST/HTTP\nget/post /api/*
+client -right-> s2 : REST/HTTP\nget/post /api/*
+
+' Servidor -> su base local
+s1 -down-> db1 : psycopg\n(local)
+s2 -down-> db2 : psycopg\n(local)
+
+' Entre servidores: canal TCP propio (heartbeat, replicación, resincronización)
+s1 <--> s2 : TCP/IP :6000 <-> :6001\nheartbeat · replicación · resync
+
+' Publicación de puertos en el anfitrión
+note bottom of s1 : anfitrión: localhost:5000 -> contenedor :5000
+note bottom of s2 : anfitrión: localhost:5001 -> contenedor :5001
+
+@enduml

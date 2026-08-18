@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+
+# Entornos locales
+.env
+.venv/
+
+# Sistema operativo / editores
+.DS_Store
+Thumbs.db
+*.swp
+
+# Logs y artefactos temporales de pruebas
+*.log

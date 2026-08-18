@@ -1,0 +1,57 @@
+@startuml secuencia-recuperacion
+' Caída del Servidor 2 y resincronización — Fase 2
+' Renderizar con PlantUML (plugin de VS Code o plantuml.jar)
+
+title Caída del Servidor 2 y resincronización
+
+actor "Usuario (cliente Ubuntu)" as c
+participant "Servidor 1\n(Debian)" as s1
+database "db1" as d1
+participant "Servidor 2\n(Fedora, caído)" as s2
+database "db2" as d2
+
+== Falla: Servidor 2 fuera de servicio ==
+
+s1 ->x s2 : PING (sin respuesta)\nheartbeat marca al par como caído
+
+c -> s1 : POST /api/records
+s1 -> d1 : INSERT (local)
+d1 --> s1 : ok
+s1 ->x s2 : REPLICATE (falla)\nqueda PENDIENTE en el outbox
+s1 --> c : 201 {"served_by": "server1"}
+
+note over s1 : El Servidor 1 sigue atendiendo\ncon normalidad; cada 5 s reintenta\nlos registros pendientes.
+
+== Recuperación: Servidor 2 reactivado ==
+
+s2 -> d2 : conexión local
+d2 --> s2 : ok
+
+s2 -> s1 : SYNC_REQUEST {cursor: null}
+s1 -> d1 : SELECT página 1
+d1 --> s1 : registros
+s1 --> s2 : SYNC_BATCH {registros, has_more}
+s2 -> d2 : UPSERT por UUID (idempotente)
+d2 --> s2 : ok
+
+s2 -> s1 : SYNC_REQUEST {cursor: último de la página}
+s1 --> s2 : SYNC_BATCH {registros, has_more: false}
+s2 -> d2 : UPSERT por UUID
+d2 --> s2 : ok
+
+s1 -> s2 : REPLICATE (pendientes del outbox)
+s2 --> s1 : ACK
+s1 -> d1 : outbox: eliminar pendientes
+d1 --> s1 : ok
+
+s1 -> s2 : PING
+s2 --> s1 : PONG\nheartbeat marca al par como recuperado
+
+c -> s2 : GET /api/records
+s2 -> d2 : SELECT
+d2 --> s2 : registros
+s2 --> c : 200 {"served_by": "server2",\n"records": [incluye los creados durante la caída]}
+
+note right of c : Ambos servidores vuelven a\nestar consistentes: el nodo\nrecuperado pidió lo que le faltaba.
+
+@enduml

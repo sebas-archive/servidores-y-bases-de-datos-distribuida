@@ -1,0 +1,147 @@
+# Fase 2 — Sistema distribuido de registro y consulta de información.
+#
+# Servicios:
+#   db1 / db2   PostgreSQL 16, una instancia independiente por servidor.
+#   server1     Debian GNU/Linux — API REST (5000) + canal TCP de sincronía (6000).
+#   server2     Fedora Linux     — API REST (5001) + canal TCP de sincronía (6001).
+#   client      Ubuntu 22.04 — cliente con historial local en SQLite.
+#
+# Red interna "sdnet" (172.28.0.0/16) con direcciones IP fijas:
+#   db1 .11   server1 .21   db2 .12   server2 .22   client .30
+#
+# Solo los puertos 5000 y 5001 se publican en el anfitrión (para probar
+# con el navegador o curl); el canal TCP de sincronía y PostgreSQL quedan
+# en la red interna.
+
+services:
+
+  db1:
+    # Nombre completo de la imagen: compatible con Docker Desktop (Windows)
+    # y con podman (Linux), que no resuelve nombres cortos.
+    image: docker.io/library/postgres:16
+    container_name: sd2-db1
+    environment:
+      POSTGRES_DB: records
+      POSTGRES_USER: sduser
+      POSTGRES_PASSWORD: sdpass
+    volumes:
+      - db1_data:/var/lib/postgresql/data
+    networks:
+      sdnet:
+        ipv4_address: 172.28.0.11
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sduser -d records"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: on-failure
+
+  db2:
+    image: docker.io/library/postgres:16
+    container_name: sd2-db2
+    environment:
+      POSTGRES_DB: records
+      POSTGRES_USER: sduser
+      POSTGRES_PASSWORD: sdpass
+    volumes:
+      - db2_data:/var/lib/postgresql/data
+    networks:
+      sdnet:
+        ipv4_address: 172.28.0.12
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sduser -d records"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: on-failure
+
+  server1:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.debian
+    container_name: sd2-server1
+    environment:
+      SERVER_ID: server1
+      PORT: "5000"
+      SYNC_PORT: "6000"
+      DB_DSN: postgresql://sduser:sdpass@db1:5432/records
+      PEER_HOST: server2
+      PEER_PORT: "6001"
+      HEARTBEAT_SECONDS: "5"
+      REPLICATE_SECONDS: "5"
+      SYNC_EVERY_SECONDS: "60"
+    depends_on:
+      - db1
+    ports:
+      - "5000:5000"
+    networks:
+      sdnet:
+        ipv4_address: 172.28.0.21
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: on-failure
+
+  server2:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.fedora
+    container_name: sd2-server2
+    environment:
+      SERVER_ID: server2
+      PORT: "5001"
+      SYNC_PORT: "6001"
+      DB_DSN: postgresql://sduser:sdpass@db2:5432/records
+      PEER_HOST: server1
+      PEER_PORT: "6000"
+      HEARTBEAT_SECONDS: "5"
+      REPLICATE_SECONDS: "5"
+      SYNC_EVERY_SECONDS: "60"
+    depends_on:
+      - db2
+    ports:
+      - "5001:5001"
+    networks:
+      sdnet:
+        ipv4_address: 172.28.0.22
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:5001/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: on-failure
+
+  client:
+    build:
+      context: ./client
+    container_name: sd2-client
+    environment:
+      SERVER1_URL: http://server1:5000
+      SERVER2_URL: http://server2:5001
+      HISTORY_DB: /app/data/history.db
+    volumes:
+      - client_history:/app/data
+    depends_on:
+      - server1
+      - server2
+    networks:
+      sdnet:
+        ipv4_address: 172.28.0.30
+    stdin_open: true
+    tty: true
+    command: ["python3", "client.py"]
+
+networks:
+  sdnet:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  db1_data: {}
+  db2_data: {}
+  client_history: {}

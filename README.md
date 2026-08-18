@@ -52,7 +52,8 @@ docker compose run --rm --no-deps -T client python3 client.py history
 | [client/](client/)                                   | Cliente Ubuntu con historial local en SQLite                                         |
 | [tests/](tests/)                                     | Escenarios de prueba (scripts + guía de resultados)                                  |
 | [scripts/](scripts/)                                 | Limpieza/reversión del despliegue (`.ps1` y `.sh`)                                   |
-| [docs/FASE-02/](docs/FASE-02/)                       | Manual, pruebas y resultados, notas técnicas, guion del video, diagramas, evidencias |
+| [docs/FASE-02/](docs/FASE-02/)                       | Manual, pruebas y resultados, notas técnicas, guion del video, diagramas, evidencias e informe de entrega (.docx) |
+| [tools/](tools/)                                     | Generador del informe de entrega (Python + python-docx) |
 
 ## Documentación de la Fase 2
 
@@ -64,6 +65,7 @@ docker compose run --rm --no-deps -T client python3 client.py history
 | [Guion del video](docs/FASE-02/guion-video.md)                                            | Guía de grabación: funcionamiento normal y falla/recuperación                                  |
 | [Diagramas PlantUML](docs/FASE-02/diagramas/)                                             | Fuentes `.puml` de despliegue y secuencias (renderizar con el plugin de PlantUML en VS Code)   |
 | [Evidencias](docs/FASE-02/evidencias/)                                                    | Carpeta y convención para las capturas de pantalla                                             |
+| [Informe de entrega Fase 2](docs/FASE-02/Informe-Fase-2-Sistemas-Distribuidos.docx)       | **Documento único de entrega** (APA 7): portada, declaraciones, requerimientos, instalación, evidencias con etiquetas para insertar capturas, conclusiones y referencias. Regenerable con `python3 tools/generar-informe-fase2.py` |
 
 ## Pruebas
 

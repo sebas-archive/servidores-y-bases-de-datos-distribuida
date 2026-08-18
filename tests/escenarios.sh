@@ -25,7 +25,7 @@ echo ">>> Estado de los contenedores:"
 docker compose ps
 
 echo ">>> 1.1 Crear un registro a través del Servidor 1:"
-client create --payload "Primer registro (vía servidor 1)" --server 1
+client create --payload "Primer registro (via servidor 1)" --server 1
 
 echo ">>> 1.2 Consultarlo a través del Servidor 2 (evidencia de replicación):"
 client list --server 2
@@ -41,8 +41,8 @@ wait_for 8 "detección de la caída por el heartbeat"
 
 echo ">>> 2.2 Crear registros con el Servidor 2 caído:"
 echo ">>> (el primero pide server2 a propósito: el cliente debe conmutar a server1)"
-client create --payload "Registro creado con server2 caído (1)" --server 2
-client create --payload "Registro creado con server2 caído (2)" --server 1
+client create --payload "Registro creado con server2 caido (1)" --server 2
+client create --payload "Registro creado con server2 caido (2)" --server 1
 
 echo ">>> 2.3 El Servidor 1 sigue atendiendo con normalidad:"
 client list --server 1

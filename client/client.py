@@ -5,7 +5,7 @@ en SQLite: a qué servidor se conectó, cuándo y qué ocurrió (sin duplicar
 los datos completos que viven en los servidores).
 
 Uso:
-  python3 client.py                                -> menú interactivo
+  python3 client.py                                -> menú interactivo (requiere terminal)
   python3 client.py create --payload "texto" [--server 1|2|auto]
   python3 client.py list   [--server 1|2|auto] [--limit 20]
   python3 client.py status
@@ -175,7 +175,12 @@ MENU = """
 def interactive():
     while True:
         print(MENU)
-        option = input("Opción: ").strip()
+        try:
+            option = input("Opción: ").strip()
+        except EOFError:
+            # stdin cerrado (p. ej. tubería): terminar sin bloquear
+            print()
+            break
         if option == "1":
             payload = input("Contenido del registro: ").strip()
             if payload:
@@ -220,9 +225,14 @@ def main():
 
     args = parser.parse_args()
     if args.command is None:
+        if not sys.stdin.isatty():
+            # En ejecuciones automatizadas (sin terminal) el menú no aplica:
+            # terminar con un mensaje claro en lugar de quedarse esperando.
+            parser.print_help()
+            return 1
         interactive()
-    else:
-        sys.exit(args.func(args) or 0)
+        return 0
+    return args.func(args) or 0
 
 
 if __name__ == "__main__":

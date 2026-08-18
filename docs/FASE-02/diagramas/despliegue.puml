@@ -32,4 +32,12 @@ s1 <--> s2 : TCP/IP :6000 <-> :6001\nheartbeat · replicación · resync
 note bottom of s1 : anfitrión: localhost:5000 -> contenedor :5000
 note bottom of s2 : anfitrión: localhost:5001 -> contenedor :5001
 
+note as puertos
+  Todos los puertos mostrados (5000, 5001, 6000, 6001, 5432)
+  son valores por defecto y **opcionales/configurables**.
+  Si alguno ya está ocupado en el anfitrión, se puede remapear
+  (p. ej. variable de entorno o docker-compose.override.yml)
+  sin afectar el puerto interno del contenedor.
+end note
+
 @enduml

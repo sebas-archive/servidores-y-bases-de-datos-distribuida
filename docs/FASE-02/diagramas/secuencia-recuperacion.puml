@@ -10,6 +10,12 @@ database "db1" as d1
 participant "Servidor 2\n(Fedora, caído)" as s2
 database "db2" as d2
 
+note over c, d2
+  Los puertos mostrados en los diagramas (REST y canal TCP)
+  son valores por defecto y **opcionales/configurables**;
+  si alguno está ocupado en el anfitrión, se puede remapear.
+end note
+
 == Falla: Servidor 2 fuera de servicio ==
 
 s1 ->x s2 : PING (sin respuesta)\nheartbeat marca al par como caído

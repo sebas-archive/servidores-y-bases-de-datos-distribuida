@@ -10,6 +10,12 @@ database "db1\n(PostgreSQL)" as d1
 participant "Servidor 2\n(Fedora, :5001)" as s2
 database "db2\n(PostgreSQL)" as d2
 
+note over c, d2
+  Los puertos mostrados (:5000, :5001, :6000, :6001) son
+  valores por defecto y **opcionales/configurables**; si
+  alguno está ocupado en el anfitrión, se puede remapear.
+end note
+
 == Registro de información ==
 
 c -> s1 : POST /api/records\n{"payload": "..."}
